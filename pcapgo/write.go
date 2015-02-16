@@ -24,7 +24,7 @@ import (
 // For those that care, we currently write v2.4 files with nanosecond
 // timestamp resolution and little-endian encoding.
 type Writer struct {
-	w io.Writer
+	w io.WriteSeeker
 }
 
 const magicMicroseconds = 0xA1B2C3D4
@@ -47,7 +47,7 @@ const versionMinor = 4
 //  // no need for file header, it's already written.
 //  w2.WritePacket(gopacket.CaptureInfo{...}, data2)
 //  f2.Close()
-func NewWriter(w io.Writer) *Writer {
+func NewWriter(w io.WriteSeeker) *Writer {
 	return &Writer{w: w}
 }
 
@@ -95,4 +95,10 @@ func (w *Writer) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
 	}
 	_, err := w.w.Write(data)
 	return err
+}
+
+// Seek added to get position of pcap being written
+func (w *Writer) Seek(offset int64, whence int) (int64, error) {
+	pos, err := w.w.Seek(offset, whence)
+	return pos, err
 }
