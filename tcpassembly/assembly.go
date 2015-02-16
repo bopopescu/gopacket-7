@@ -82,6 +82,8 @@ type Reassembly struct {
 	End bool
 	// Seen is the timestamp this set of bytes was pulled off the wire.
 	Seen time.Time
+	// Index generated for packet
+	Index string
 }
 
 const pageBytes = 1900
@@ -188,7 +190,7 @@ type Stream interface {
 // new TCP session.
 type StreamFactory interface {
 	// New should return a new stream for the given TCP key.
-	New(netFlow, tcpFlow gopacket.Flow) Stream
+	New(netFlow, tcpFlow gopacket.Flow, index string) Stream
 }
 
 func (p *StreamPool) connections() []*connection {
@@ -478,14 +480,14 @@ func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection
 // getConnection returns a connection.  If end is true and a connection
 // does not already exist, returns nil.  This allows us to check for a
 // connection without actually creating one if it doesn't already exist.
-func (p *StreamPool) getConnection(k key, end bool, ts time.Time) *connection {
+func (p *StreamPool) getConnection(k key, index string, end bool, ts time.Time) *connection {
 	p.mu.RLock()
 	conn := p.conns[k]
 	p.mu.RUnlock()
 	if end || conn != nil {
 		return conn
 	}
-	s := p.factory.New(k[0], k[1])
+	s := p.factory.New(k[0], k[1], index)
 	p.mu.Lock()
 	conn = p.newConnection(k, s, ts)
 	if conn2 := p.conns[k]; conn2 != nil {
@@ -499,8 +501,8 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time) *connection {
 
 // Assemble calls AssembleWithTimestamp with the current timestamp, useful for
 // packets being read directly off the wire.
-func (a *Assembler) Assemble(netFlow gopacket.Flow, t *layers.TCP) {
-	a.AssembleWithTimestamp(netFlow, t, time.Now())
+func (a *Assembler) Assemble(netFlow gopacket.Flow, t *layers.TCP, index string) {
+	a.AssembleWithTimestamp(netFlow, t, index, time.Now())
 }
 
 // AssembleWithTimestamp reassembles the given TCP packet into its appropriate
@@ -516,7 +518,7 @@ func (a *Assembler) Assemble(netFlow gopacket.Flow, t *layers.TCP) {
 //    zero or one calls to StreamFactory.New, creating a stream
 //    zero or one calls to Reassembled on a single stream
 //    zero or one calls to ReassemblyComplete on the same stream
-func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, timestamp time.Time) {
+func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, index string, timestamp time.Time) {
 	// Ignore empty TCP packets
 	if !t.SYN && !t.FIN && !t.RST && len(t.LayerPayload()) == 0 {
 		if *debugLog {
@@ -534,7 +536,7 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 	// times for the VAST majority of cases.
 	for {
 		conn = a.connPool.getConnection(
-			key, !t.SYN && len(t.LayerPayload()) == 0, timestamp)
+			key, index, !t.SYN && len(t.LayerPayload()) == 0, timestamp)
 		if conn == nil {
 			if *debugLog {
 				log.Printf("%v got empty packet on otherwise empty connection", key)
@@ -561,6 +563,19 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 				Skip:  0,
 				Start: true,
 				Seen:  timestamp,
+				Index: index,
+			})
+			conn.nextSeq = seq.Add(len(bytes) + 1)
+		} else if t.PSH && t.ACK {
+			if *debugLog {
+				log.Printf("%v saw PSH/ACK packet first, returning immediately, seq=%v", key, seq)
+			}
+			a.ret = append(a.ret, Reassembly{
+				Bytes: bytes,
+				Skip:  0,
+				Start: true,
+				Seen:  timestamp,
+				Index: index,
 			})
 			conn.nextSeq = seq.Add(len(bytes) + 1)
 		} else {
@@ -584,6 +599,7 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 			Skip:  0,
 			End:   t.RST || t.FIN,
 			Seen:  timestamp,
+			Index: index,
 		})
 	}
 	if len(a.ret) > 0 {
