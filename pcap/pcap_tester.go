@@ -11,7 +11,7 @@
 package main
 
 import (
-	"code.google.com/p/gopacket/pcap"
+	"github.com/ChrisRx/gopacket/pcap"
 	"flag"
 	"fmt"
 	"log"

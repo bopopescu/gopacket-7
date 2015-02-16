@@ -18,10 +18,10 @@
 package main
 
 import (
-	"code.google.com/p/gopacket"
-	"code.google.com/p/gopacket/layers"
-	"code.google.com/p/gopacket/pcap"
-	"code.google.com/p/gopacket/tcpassembly"
+	"github.com/ChrisRx/gopacket"
+	"github.com/ChrisRx/gopacket/layers"
+	"github.com/ChrisRx/gopacket/pcap"
+	"github.com/ChrisRx/gopacket/tcpassembly"
 	"compress/gzip"
 	"encoding/hex"
 	"flag"

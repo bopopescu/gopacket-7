@@ -19,8 +19,8 @@
 package tcpassembly
 
 import (
-	"code.google.com/p/gopacket"
-	"code.google.com/p/gopacket/layers"
+	"github.com/ChrisRx/gopacket"
+	"github.com/ChrisRx/gopacket/layers"
 	"flag"
 	"fmt"
 	"log"

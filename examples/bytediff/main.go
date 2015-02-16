@@ -9,7 +9,7 @@
 package main
 
 import (
-	"code.google.com/p/gopacket/bytediff"
+	"github.com/ChrisRx/gopacket/bytediff"
 	"fmt"
 )
 

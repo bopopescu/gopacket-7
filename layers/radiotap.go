@@ -8,7 +8,7 @@ package layers
 
 import (
 	"bytes"
-	"code.google.com/p/gopacket"
+	"github.com/ChrisRx/gopacket"
 	"encoding/binary"
 	"fmt"
 )

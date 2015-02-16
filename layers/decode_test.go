@@ -9,8 +9,8 @@ package layers
 
 import (
 	"bytes"
-	"code.google.com/p/gopacket"
-	"code.google.com/p/gopacket/bytediff"
+	"github.com/ChrisRx/gopacket"
+	"github.com/ChrisRx/gopacket/bytediff"
 	"encoding/hex"
 	"fmt"
 	"net"

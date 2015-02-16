@@ -72,7 +72,7 @@ that's why they're there. */
 package layers
 
 import (
-	"code.google.com/p/gopacket"
+	"github.com/ChrisRx/gopacket"
 	"encoding/binary"
 	"fmt"
 	"net"

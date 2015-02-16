@@ -7,7 +7,7 @@
 package layers
 
 import (
-	"code.google.com/p/gopacket"
+	"github.com/ChrisRx/gopacket"
 	_ "fmt"
 	"net"
 	"reflect"
